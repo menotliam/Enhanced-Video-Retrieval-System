@@ -207,9 +207,9 @@ This project is open-source under the **MIT License**.
 ## 🏆 Author
 
 **Data Vision Team**
+
 💼 AI Challenge 2025
+
 📧 Contact: [alexngo4work@example.com](mailto:alexngo4work@gmail.com)
 
 ```
-
----

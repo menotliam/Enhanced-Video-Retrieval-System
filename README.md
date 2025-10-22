@@ -1,286 +1,229 @@
+---
 
-# AI Video Search
+## 📘 README.md
 
+````markdown
+# 🎥 Multimodal Video Retrieval System (AIC2025)
 
-## Tổng quan
-AI Video Search là hệ thống tìm kiếm nội dung video đa phương tiện (text, audio, hình ảnh) tối ưu cho tiếng Việt, hỗ trợ:
-- Phân cảnh tự động
-- Nhận diện đối tượng, bối cảnh, text trong video
-- Nhận diện và chuẩn hóa tiếng nói (ASR)
-- Sinh vector embedding đa modal (hình, tiếng, text)
-- Tìm kiếm nhanh, chính xác bằng truy vấn tự nhiên (text, voice, image)
+An efficient **multimodal video retrieval pipeline** designed to index and search through massive video datasets using **CLIP embeddings**, **FAISS**, and metadata extracted from **OCR**, **ASR**, **Object Detection**, and **Scene Recognition**.
 
-## Cấu trúc thư mục
-```
-ai-video-search/
-├── backend/        # Backend FastAPI, AI pipelines, DB connectors
-├── frontend/       # Frontend React/Vite
-├── shared/         # Thư viện, schema, utils dùng chung
-├── docker/         # Dockerfile, docker-compose
-```
-
-
-## Vai trò các file chính
-
-### backend/app/
-- `main.py`: Entry point khởi động FastAPI, khai báo các route chính.
-- `config.py`: Cấu hình đường dẫn model, DB, API key.
-- `__init__.py`: Đánh dấu thư mục là package Python.
-
-#### backend/app/api/
-- `search.py`: Định nghĩa route API cho tìm kiếm video.
-- `ingest.py`: Định nghĩa route API cho upload video, phân cảnh.
-- `health.py`: Route kiểm tra tình trạng server.
-
-#### backend/app/services/
-- `scene_segmentation.py`: Phân cảnh video bằng TransNetV2.
-- `visual_pipeline.py`: Xử lý keyframe, object detection, OCR, scene classification, visual embedding.
-- `audio_pipeline.py`: Cắt audio, ASR, chuẩn hóa text, embedding audio & transcript.
-- `fusion.py`: Gộp embedding đa modal, đồng bộ thời gian, ANN, fuzzy matching.
-- `search_service.py`: Pipeline tìm kiếm, parse query, re-rank, RAG.
-
-#### backend/app/models/
-- `ocr_model.py`: Load và inference model OCR (VietOCR/PaddleOCR).
-- `object_detector.py`: Load và inference model object detection (YOLO/Detectron2).
-- `asr_model.py`: Load và inference model ASR (Whisper/Wav2Vec2).
-- `embedding_model.py`: Load và encode embedding (CLIP, PhoBERT, BLIP2...)
-- `fusion_model.py`: Model gộp embedding đa modal.
-
-#### backend/app/db/
-- `vector_db.py`: Kết nối và thao tác với FAISS/Milvus (vector DB).
-- `metadata_db.py`: Kết nối và thao tác với Postgres/Elasticsearch (metadata DB).
-
-#### backend/app/utils/
-- `text_normalizer.py`: Chuẩn hóa tiếng Việt.
-- `logger.py`: Tiện ích logging.
-- `config_loader.py`: Đọc file config YAML.
-
-#### backend/tests/
-- `__init__.py`: Đánh dấu package test.
-
-#### backend/requirements.txt
-- Khai báo các package Python cần thiết cho backend.
-
-### frontend/src/
-#### api/
-- `searchApi.ts`: Hàm gọi API tìm kiếm backend.
-- `uploadApi.ts`: Hàm gọi API upload video backend.
-#### components/
-- `SearchBar.tsx`: Thanh tìm kiếm UI.
-- `VideoPlayer.tsx`: Player video.
-- `ScenePreview.tsx`: Hiển thị preview cảnh.
-- `Filters.tsx`: Bộ lọc tìm kiếm.
-#### pages/
-- `Home.tsx`: Trang chủ.
-- `SearchResults.tsx`: Trang kết quả tìm kiếm.
-#### store/
-- `index.ts`: Quản lý state (Redux/Zustand).
-#### utils/
-- `timeFormatter.ts`: Định dạng thời gian.
-- `vnTextHighlight.ts`: Highlight từ khóa tiếng Việt.
-#### styles/
-- `index.css`: CSS/Tailwind.
-
-### shared/
-#### constants/
-- `search_config.py`: Các hằng số cấu hình tìm kiếm.
-#### schemas/
-- `search_request.py`: Pydantic schema cho request tìm kiếm.
-- `search_response.py`: Pydantic schema cho response tìm kiếm.
-#### utils/
-- `timecode.py`: Tiện ích chuyển đổi timecode.
-- `vn_text.py`: Tiện ích xử lý tiếng Việt.
-
-### docker/
-- `backend.Dockerfile`: Dockerfile build backend.
-- `frontend.Dockerfile`: Dockerfile build frontend.
-- `docker-compose.yml`: Chạy đồng thời backend & frontend.
-
-
-## Quy trình xử lý video (Pipeline tổng thể)
-Hệ thống gồm 2 pipeline chính:
-
-### 1. Offline Data Processing Pipeline (Indexing)
-**Input:** Video (tiếng Việt hoặc đa ngôn ngữ, ưu tiên VN)
-
-**Các bước:**
-1. **Scene Segmentation**: Phân cảnh video bằng TransNetV2 → Xuất (scene_id, start_ts, end_ts)
-2. **Visual Pipeline** (cho từng scene):
-	- Keyframe extraction: lấy 3 frame (đầu, giữa, cuối)
-	- Object detection: YOLOv8/Detectron2 → danh sách object + bbox
-	- OCR: VietOCR/PaddleOCR (VN optimized) → text + vị trí
-	- Scene classification: Indoor/Outdoor, context category
-	- CLIP/BLIP2 embedding: vector đặc trưng hình ảnh
-3. **Audio Pipeline** (cho từng scene):
-	- Cắt audio theo scene
-	- ASR: Whisper/Wav2Vec2 (VN) → transcript tiếng Việt
-	- Text normalization: Chuẩn hóa chính tả, số, tên riêng
-	- Audio embeddings: vector đặc trưng âm thanh
-	- Transcript embeddings: từ transcript (PhoBERT/LaBSE)
-4. **Multimodal Fusion**:
-	- Temporal alignment: Đồng bộ frame và audio theo scene
-	- Fusion embedding: gộp embedding visual (3 frame) + transcript + audio
-	- Rapid matching (ANN/LSH): tăng tốc retrieval
-	- Fuzzy matching: xử lý sai chính tả/âm tiếng Việt
-	- Metadata: objects, OCR text, transcript, tags, scene labels
-5. **Storage**:
-	- Vector DB (FAISS/Milvus) → lưu fusion embedding
-	- Metadata DB (Postgres + Elasticsearch) → lưu metadata để filter
-
-**Ví dụ output cho 1 scene:**
-```json
-{
-  "scene_id": "scene_12",
-  "start_ts": "00:01:10.000",
-  "end_ts": "00:01:15.000",
-  "frames": [
-	 {
-		"frame_id": "scene_12_frame_1",
-		"timestamp": "00:01:12.345",
-		"objects": ["xe_may", "nguoi"],
-		"ocr_text": "Ngân hàng ABC",
-		"scene_label": "đường phố",
-		"embedding_clip": [0.12, -0.05, ...]
-	 },
-	 // ...
-  ],
-  "audio": {
-	 "transcript": "Ngân hàng ABC đang mở cửa.",
-	 "embedding_text": [0.09, 0.14, ...],
-	 "embedding_audio": [0.02, -0.03, ...]
-  },
-  "fusion_embedding": [0.11, -0.07, ...],
-  "metadata": {
-	 "objects": ["xe_may", "nguoi"],
-	 "ocr_text": ["Ngân hàng ABC"],
-	 "transcript": "Ngân hàng ABC đang mở cửa.",
-	 "scene_label": "đường phố"
-  }
-}
-```
-
-### 2. Online Search Pipeline (Query → Result)
-**Input:** Query tiếng Việt (text / voice / image)
-
-**Các bước:**
-1. (Optional) OpenAI LLM: Phân tích, mở rộng query → sinh bộ lọc metadata (ví dụ: "Ngân hàng ABC" trong phố Hà Nội năm 2020)
-2. Nếu query là tiếng nói → ASR trước
-3. **Metadata Filtering**: Elasticsearch query → lọc trước theo object, OCR text, transcript, thời gian, địa điểm
-4. **Query Embedding**: Encode query (PhoBERT/CLIP text encoder) → vector
-5. **ANN Search**: Truy vấn vector DB (fusion embeddings) → lấy top-K scene ứng viên
-6. **Re-ranking**:
-	- Cross-encoder: so sánh ngữ nghĩa sâu
-	- Fuzzy text matching: xử lý sai chính tả tiếng Việt
-	- Quality scoring: chọn scene rõ nét, âm thanh tốt
-7. (Optional) OpenAI RAG: Lấy top-K → sinh tóm tắt, câu trả lời tiếng Việt
-8. **Output:**
-	- Scene preview (ảnh + audio snippet)
-	- Timestamp trong video gốc
-	- OCR text, transcript
-	- Link mở video tại scene đó
+This project is built as part of **AI Challenge 2025**.  
+It focuses on creating a scalable yet accurate retrieval system for large-scale video keyframes.
 
 ---
 
+## 🧠 Overview
 
-## Công nghệ sử dụng
+### 🔍 What It Does
+Given a massive dataset of **video keyframes**, the system:
+1. Extracts multimodal metadata:
+   - Text (from **OCR**)
+   - Speech (from **ASR**)
+   - Objects (via **YOLOv7**)
+   - Scene context (via **Places365** or similar)
+2. Generates 512-D **CLIP visual embeddings**
+3. Builds a **FAISS vector index** (L2 / HNSW / GPU)
+4. Retrieves the most relevant frames for a **query image or text**
 
-| Bước                  | Mô hình đề xuất tốt nhất                |
-|-----------------------|-----------------------------------------|
-| Scene Segmentation    | TransNetV2                              |
-| Keyframe Extraction   | OpenCV + ffmpeg                         |
-| Object Detection      | YOLOv8                                  |
-| OCR                  | PaddleOCR                               |
-| Scene Classification | Swin Transformer                        |
-| Visual Embedding      | CLIP                                    |
-| ASR                  | Whisper                                 |
-| Text Normalization    | vncorenlp + custom rules                |
-| Audio Embedding       | Wav2Vec2                                |
-| Transcript Embedding  | PhoBERT (TV), LaBSE (đa ngôn ngữ)       |
-| ANN Search            | FAISS                                   |
-| Metadata DB           | PostgreSQL + Elasticsearch              |
-| LLM, RAG              | OpenAI GPT (GPT-4 hoặc GPT-3.5)         |
+---
 
-📹 VIDEO INPUT
-  ↓
-🎬 SCENE SEGMENTATION (TransNetV2)
- - Phân cảnh dựa trên thay đổi khung hình lớn (scene boundaries)
- - Kết quả: danh sách (scene_id, start_ts, end_ts)
+## 🏗️ Pipeline Architecture
 
-FOR EACH SCENE:
+```text
+             ┌────────────────────────────┐
+             │         Dataset            │
+             │   (Video Keyframes)        │
+             └────────────┬───────────────┘
+                          │
+         ┌────────────────┴────────────────┐
+         │   Multimodal Feature Extractor  │
+         │  (OCR + ASR + YOLO + Scene)    │
+         └────────────────┬────────────────┘
+                          │
+                 ┌────────┴────────┐
+                 │ CLIP Embeddings │  → (512d normalized vectors)
+                 └────────┬────────┘
+                          │
+               ┌──────────┴──────────┐
+               │  FAISS Index Build  │  ← FlatL2 / HNSW / GPU
+               └──────────┬──────────┘
+                          │
+                    🔎 Retrieval Engine
+                          │
+             ┌────────────┴─────────────┐
+             │  Query (Image / Text)    │
+             └────────────┬─────────────┘
+                          ▼
+                 ✅ Ranked Results
+````
 
-┌────────────────────────── VISUAL PIPELINE ────────────────────────────┐
-│ 1) Keyframe extraction (first/mid/last frame)                         │
-│ 2) Object detection (YOLOv8 / Detectron2) → danh sách đối tượng + bbox│
-│ 3) OCR (PaddleOCR/VietOCR) → text tiếng Việt                          │
-│ 4) Scene classification (ResNet/Swin)                                 │
-│ 5) Visual embeddings (CLIP/BLIP2)                                     │
-└───────────────────────────────────────────────────────────────────────┘
+---
 
-┌────────────────────────── AUDIO PIPELINE ─────────────────────────────┐
-│ 1) Cắt audio theo start_ts, end_ts                                    │
-│ 2) ASR tiếng Việt (Whisper large-v2 / Wav2Vec2-VN) → transcript       │
-│ 3) Text normalization (chính tả, dấu, số)                             │
-│ 4) Audio embeddings (Wav2Vec2/Hubert)                                 │
-│ 5) Transcript embeddings (PhoBERT/LaBSE/embedding-VN)                 │
-└───────────────────────────────────────────────────────────────────────┘
+## 🧩 Components
 
-### MULTIMODAL FUSION
+| Module                 | Description                            |
+| ---------------------- | -------------------------------------- |
+| `embedding_model_2.py` | Generate CLIP embeddings for keyframes |
+| `object_detector.py`   | Detect visual objects using YOLOv7     |
+| `ocr_extractor.py`     | Extract word-level text via EasyOCR    |
+| `asr_transcriber.py`   | Extract speech text via Whisper        |
+| `scene_recognizer.py`  | Recognize scene context                |
+| `build_faiss_index.py` | Build **FAISS FlatL2** index           |
+| `build_hnsw_index.py`  | Build **FAISS HNSW** index (CPU/GPU)   |
+| `vector_search.py`     | Perform similarity search via FAISS    |
+| `data/embeddings_v2/`  | Stored CLIP embeddings and metadata    |
 
-- Temporal alignment: đồng bộ frame + audio
-- Rapid matching (ANN/LSH): tìm nearest neighbors nhanh
-- Fuzzy matching (VN text): khớp gần đúng OCR/transcript
-- Cross-modal fusion: gộp embedding audio + visual + text
-- Output: fusion_embedding + metadata (objects, OCR text, transcript, tags, thời gian)
+---
 
-### STORAGE
+## 📁 Directory Structure
 
-- Vector DB (FAISS / Milvus): lưu fusion_embedding
-- Metadata DB (Postgres + Elasticsearch): lưu metadata tìm kiếm được (cảnh, tag, đối tượng, text OCR, transcript)
-
-### SEARCH PIPELINE
-
-1. (Optional) OpenAI LLM: Parse và mở rộng query tiếng Việt → filters (ngày, đối tượng, context) 
-	Nếu query là tiếng nói -> ASR trước
-2. Pre-filter metadata trong Elasticsearch -> Obj, OCR text, transcript, thời gian, địa điểm.
-3. Encode query → embedding(s)(PhoBERT/CLIP text encoder) → vector.
-4. ANN search (fusion index + modality-specific index) → top-K scene ứng viên
-5. Re-rank: cross-encoder + fuzzy text match + quality score
-6. (Optional) OpenAI RAG: sinh câu trả lời / tóm tắt tiếng Việt
-7. Trả về kết quả: preview cảnh, timestamp, trích đoạn transcript, OCR text
+```
+backend/
+├─ app/
+│  ├─ models/
+│  │  ├─ embedding_model_2.py
+│  │  ├─ object_detector.py
+│  │  ├─ build_faiss_index.py
+│  │  └─ build_hnsw_index.py
+│  └─ utils/
+│     ├─ ocr_extractor.py
+│     ├─ asr_transcriber.py
+│     └─ scene_recognizer.py
+├─ data/
+│  ├─ embeddings_v2/
+│  │  ├─ embeds/frame_clip/<video_id>/<frame_idx>.npy
+│  │  └─ meta/frame_meta/<video_id>/<frame_idx>.json
+│  └─ faiss_index_v2/
+└─ requirements.txt
 ```
 
+---
 
-## Backend
+## ⚙️ Setup
 
+### Option 1. Local (CPU)
 
-## Frontend
-- React, Vite, các component UI tìm kiếm, preview video
-- Xem `frontend/package.json` để cài đặt
-
-
-## Shared
-- Schema Pydantic/TypeScript, utils, constants
-
-docker-compose up --build
-
-## Chạy nhanh bằng Docker
 ```bash
-docker-compose up --build
-```
-
-
-## Phát triển local
-### Backend
-```bash
-cd backend
+git clone https://github.com/<your_username>/<repo_name>.git
+cd <repo_name>
 pip install -r requirements.txt
-uvicorn app.main:app --reload
 ```
-### Frontend
+
+### Option 2. Google Colab (with GPU)
+
 ```bash
-cd frontend
-npm install
-npm run dev
+!pip install --no-cache-dir faiss-gpu-cu11==1.7.4.post2
+!pip install ftfy regex tqdm pillow torch torchvision
 ```
-### Chạy Scene
-python scene_segmentation.py --batch_folder ../../VIDEO_AIC2024_P1 --scenes scenes_all.json
+
+---
+
+## 🚀 Build CLIP Embeddings
+
+```bash
+python embedding_model_2.py --input-dir data/keyframes --output-dir data/embeddings_v2
+```
+
+---
+
+## 🧱 Build FAISS Index
+
+### FlatL2 (maximum precision)
+
+```bash
+python build_faiss_index.py
+```
+
+### HNSW (fast, tunable)
+
+```bash
+python build_hnsw_index.py --use-gpu --hnsw-m 32 --ef-construction 200 --ef-search 500
+```
+
+> 📌 Notes:
+>
+> * `hnsw-m`: Number of connections per node (higher = better recall, slower)
+> * `ef-construction`: Quality during index build (↑ accuracy, ↓ speed)
+> * `ef-search`: Accuracy at query time (↑ = more accurate)
+
+---
+
+## 🔍 Query Example
+
+```python
+import faiss, numpy as np, json
+
+index = faiss.read_index("data/faiss_index_v2/frame_clip_index.faiss")
+id_map = json.load(open("data/faiss_index_v2/frame_clip_id_mapping.json"))
+query_vec = np.load("query_clip.npy").astype(np.float32).reshape(1, -1)
+
+k = 5
+D, I = index.search(query_vec, k)
+for dist, idx in zip(D[0], I[0]):
+    print(f"Match UID: {id_map[str(idx)]}, Distance: {dist}")
+```
+
+---
+
+## 🧪 Evaluation
+
+| Metric                       | Description                                         |
+| ---------------------------- | --------------------------------------------------- |
+| Recall@K                     | Proportion of relevant keyframes found within top-K |
+| Precision                    | Correct results / total retrieved                   |
+| Mean Average Precision (mAP) | Overall ranking quality                             |
+
+---
+
+## 💡 Future Work
+
+* Fuse multimodal embeddings (visual + textual)
+* Improve OCR/ASR noise robustness
+* Implement re-ranking with cross-modal similarity
+* Integrate UI-based visual search interface
+
+---
+
+## 👨‍💻 Tech Stack
+
+| Component         | Technology                  |
+| ----------------- | --------------------------- |
+| Embedding         | OpenAI CLIP (ViT-B/32)      |
+| Indexing          | FAISS (FlatL2 / HNSW)       |
+| Object Detection  | YOLOv7                      |
+| OCR               | EasyOCR                     |
+| ASR               | Whisper                     |
+| Scene Recognition | Places365                   |
+| Backend           | Python 3.11                 |
+| GPU Support       | FAISS GPU (CUDA 11/12)      |
+| Deployment        | Google Colab / Local Server |
+
+---
+
+## 📜 License
+
+This project is open-source under the **MIT License**.
+
+---
+
+## 🤝 Acknowledgements
+
+* [OpenAI CLIP](https://github.com/openai/CLIP)
+* [FAISS by Meta](https://github.com/facebookresearch/faiss)
+* [YOLOv7 by WongKinYiu](https://github.com/WongKinYiu/yolov7)
+* [EasyOCR](https://github.com/JaidedAI/EasyOCR)
+* [Whisper by OpenAI](https://github.com/openai/whisper)
+
+---
+
+## 🏆 Author
+
+**BabyBoy (AIC2025 Team)**
+💼 AI Challenge 2025 – Phase 2 Project
+📧 Contact: [your_email@example.com](mailto:your_email@example.com)
+
+```
+
+---
+
+```

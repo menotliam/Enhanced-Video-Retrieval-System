@@ -1,8 +1,3 @@
----
-
-## 📘 README.md
-
-````markdown
 # 🎥 Multimodal Video Retrieval System (AIC2025)
 
 An efficient **multimodal video retrieval pipeline** designed to index and search through massive video datasets using **CLIP embeddings**, **FAISS**, and metadata extracted from **OCR**, **ASR**, **Object Detection**, and **Scene Recognition**.

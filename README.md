@@ -61,11 +61,8 @@ Given a massive dataset of **video keyframes**, the system:
 | `embedding_model_2.py` | Generate CLIP embeddings for keyframes |
 | `object_detector.py`   | Detect visual objects using YOLOv7     |
 | `ocr_extractor.py`     | Extract word-level text via EasyOCR    |
-| `asr_transcriber.py`   | Extract speech text via Whisper        |
-| `scene_recognizer.py`  | Recognize scene context                |
 | `build_faiss_index.py` | Build **FAISS FlatL2** index           |
-| `build_hnsw_index.py`  | Build **FAISS HNSW** index (CPU/GPU)   |
-| `vector_search.py`     | Perform similarity search via FAISS    |
+| `search_text_frame.py` | Perform similarity search via FAISS    |
 | `data/embeddings_v2/`  | Stored CLIP embeddings and metadata    |
 
 ---
@@ -78,12 +75,9 @@ backend/
 │  ├─ models/
 │  │  ├─ embedding_model_2.py
 │  │  ├─ object_detector.py
-│  │  ├─ build_faiss_index.py
-│  │  └─ build_hnsw_index.py
+│  │  └─ build_faiss_index.py
 │  └─ utils/
-│     ├─ ocr_extractor.py
-│     ├─ asr_transcriber.py
-│     └─ scene_recognizer.py
+│     └─ ocr_extractor.py
 ├─ data/
 │  ├─ embeddings_v2/
 │  │  ├─ embeds/frame_clip/<video_id>/<frame_idx>.npy
@@ -137,7 +131,6 @@ python build_hnsw_index.py --use-gpu --hnsw-m 32 --ef-construction 200 --ef-sear
 
 > 📌 Notes:
 >
-> * `hnsw-m`: Number of connections per node (higher = better recall, slower)
 > * `ef-construction`: Quality during index build (↑ accuracy, ↓ speed)
 > * `ef-search`: Accuracy at query time (↑ = more accurate)
 
@@ -213,9 +206,9 @@ This project is open-source under the **MIT License**.
 
 ## 🏆 Author
 
-**BabyBoy (AIC2025 Team)**
-💼 AI Challenge 2025 – Phase 2 Project
-📧 Contact: [your_email@example.com](mailto:your_email@example.com)
+**Data Vision Team**
+💼 AI Challenge 2025
+📧 Contact: [alexngo4work@example.com](mailto:alexngo4work@gmail.com)
 
 ```
 

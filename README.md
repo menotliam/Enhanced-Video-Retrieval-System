@@ -210,6 +210,6 @@ This project is open-source under the **MIT License**.
 
 💼 AI Challenge 2025
 
-📧 Contact: [alexngo4work@example.com](mailto:alexngo4work@gmail.com)
+📧 Contact: [alexngo4work@gmail.com](mailto:alexngo4work@gmail.com)
 
 ```

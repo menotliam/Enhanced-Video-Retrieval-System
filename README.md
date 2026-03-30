@@ -1,11 +1,25 @@
+<div align="center">
+   
 # 🎥 Multimodal Video Retrieval System (AIC2025)
 
-An efficient **multimodal video retrieval pipeline** designed to index and search through massive video datasets using **CLIP embeddings**, **FAISS**, and metadata extracted from **OCR**, **ASR**, **Object Detection**, and **Scene Recognition**.
+![last commit](https://img.shields.io/badge/last_commit-today-1abc9c?style=for-the-badge)
+<img src="https://img.shields.io/badge/Python-100%25-blue?style=for-the-badge&logo=python&logoColor=white" alt="Language Stats" />
+![languages count](https://img.shields.io/badge/languages-3-9b59b6?style=for-the-badge)
+  
+<p>Built with the tools and technologies:</p>
+  
+<img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python" />
+<img src="https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white" alt="PyTorch" />
+<img src="https://img.shields.io/badge/OpenAI_CLIP-412991?style=for-the-badge&logo=openai&logoColor=white" alt="OpenAI" />
+<img src="https://img.shields.io/badge/Meta_FAISS-0467DF?style=for-the-badge&logo=meta&logoColor=white" alt="Meta" />
+<img src="https://img.shields.io/badge/Google_Colab-F9AB00?style=for-the-badge&logo=googlecolab&color=525252" alt="Google Colab" />
+<img src="https://img.shields.io/badge/JSON-5E5C5C?style=for-the-badge&logo=json&logoColor=white" alt="JSON" />
+<img src="https://img.shields.io/badge/Markdown-000000?style=for-the-badge&logo=markdown&logoColor=white" alt="Markdown" />
 
-This project is built as part of **AI Challenge 2025**.  
-It focuses on creating a scalable yet accurate retrieval system for large-scale video keyframes.
-
----
+![Build](https://img.shields.io/badge/CI-not_configured-lightgrey?style=flat-square)
+![Coverage](https://img.shields.io/badge/coverage-not_measured-lightgrey?style=flat-square)
+![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
+</div>
 
 ## 🧠 Overview
 
